@@ -1,0 +1,57 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  namespace: monitoring
+  labels:
+    app: tempo
+spec:
+  selector:
+    matchLabels:
+      app: tempo
+  template:
+    metadata:
+      labels:
+        app: tempo
+    spec:
+      securityContext:
+        fsGroup: 472
+        supplementalGroups:
+          - 0
+      containers:
+        - name: tempo
+          image: grafana/tempo:latest
+          args:
+            - "-config.file=/etc/tempo/tempo.yaml"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3200
+              name: otpl-tempo
+              protocol: TCP
+            - containerPort: 4317
+              name: otpl-grpc
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+            limits:
+              cpu: 1000m
+              memory: 1000Mi
+          volumeMounts:
+            - name: tempo-config-volume
+              mountPath: /etc/tempo
+
+            - name: tempo-storage-volume
+              mountPath: /tmp/tempo
+      volumes:
+        - name: tempo-config-volume
+          configMap:
+            defaultMode: 420
+            name: tempo-config
+  
+        - name: tempo-storage-volume
+          persistentVolumeClaim:
+            claimName: tempo-pvc
+---

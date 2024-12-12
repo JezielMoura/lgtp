@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  namespace: monitoring
+  labels:
+    app: loki
+spec:
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      securityContext:
+        fsGroup: 472
+        supplementalGroups:
+          - 0
+      containers:
+        - name: loki
+          image: grafana/loki:3.0.0
+          args:
+            - "-config.file=/etc/loki/loki.yaml"
+            - "-target=all"
+            - "--pattern-ingester.enabled=true"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3100
+              name: http-loki
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+            limits:
+              cpu: 1000m
+              memory: 1000Mi
+          volumeMounts:
+            - name: loki-config-volume
+              mountPath: /etc/loki/
+
+            - name: loki-storage-volume
+              mountPath: /loki/
+      volumes:
+        - name: loki-config-volume
+          configMap:
+            defaultMode: 420
+            name: loki-config
+
+        - name: loki-storage-volume
+          persistentVolumeClaim:
+            claimName: loki-pvc
+---

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collector
+  namespace: monitoring
+  labels:
+    app: collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collector
+  template:
+    metadata:
+      labels:
+        app: collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector-contrib
+          args:
+            - "--config=/etc/collector/collector.yaml"
+          ports:
+            - containerPort: 4318
+              name: otpl-http
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+            limits:
+              cpu: 500m
+              memory: 500Mi
+          volumeMounts:
+            - name: collector-config-volume
+              mountPath: /etc/collector
+      volumes:
+        - name: collector-config-volume
+          configMap:
+            defaultMode: 420
+            name: collector-server-conf
+---
